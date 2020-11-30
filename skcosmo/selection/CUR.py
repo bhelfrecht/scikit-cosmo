@@ -177,9 +177,7 @@ class SampleCUR(_BaseCUR):
         :math:`{\\mathbf{\\tilde{K}} = \\alpha \\mathbf{XX}^T +
         (1 - \\alpha)\\mathbf{\\hat{Y}\\hat{Y}}^T}`
         """
-        return pcovr_kernel_distance(
-            self.mixing, self.A_current, self.Y_current, self.tol
-        )
+        return pcovr_kernel_distance(self.mixing, self.A_current, self.Y_current)
 
     def orthogonalize(self):
         """

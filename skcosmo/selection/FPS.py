@@ -161,9 +161,7 @@ class SampleFPS(_BaseFPS):
         else:
             self.A, self.Y = check_array(X, copy=True), None
 
-        self.product = pcovr_kernel_distance(
-            self.mixing, self.A, self.Y, rcond=self.tol
-        )
+        self.product = pcovr_kernel_distance(self.mixing, self.A, self.Y)
         super().__init__(tol=tol, **kwargs)
 
     def calc_distance(self, idx_1, idx_2=None):
