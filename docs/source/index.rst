@@ -27,5 +27,6 @@ it you agree to distribute your changes under the same license.
 
   pcovr
   selection
+  preprocessing
   reference
   contributing
