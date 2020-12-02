@@ -93,6 +93,13 @@ class PCovR(_BasePCA, LinearModel):
 
         X, Y = check_X_y(X, Y, y_numeric=True, multi_output=True)
 
+        if self.space is not None and self.space not in [
+            "feature",
+            "structure",
+            "auto",
+        ]:
+            raise ValueError("Only feature and structure space are supported.")
+
         if self.n_components is None:
             self.n_components = min(X.shape)
 
@@ -100,12 +107,19 @@ class PCovR(_BasePCA, LinearModel):
         if min(X.shape) <= self.n_components:
             self.full_eig = True
 
-        # self._check_space(X)
-
         if Yhat is None or W is None:
             Yhat, W = self._compute_Yhat(X, Y, Yhat=Yhat, W=W)
 
-        self._fit(X, Yhat, W)
+        if self.space is None:
+            if X.shape[0] > X.shape[1]:
+                self.space = "feature"
+            else:
+                self.space = "structure"
+
+        if self.space == "feature":
+            return self._fit_feature_space(X, Yhat, W)
+        else:
+            return self._fit_structure_space(X, Yhat, W)
 
         self.mean_ = np.mean(X, axis=0)
         self.pxy_ = self.pxt_ @ self.pty_
@@ -118,25 +132,6 @@ class PCovR(_BasePCA, LinearModel):
             )
 
         self.components_ = self.pxt_.T  # for sklearn compatibility
-
-    def _fit(self, X, Yhat, W):
-        if self.space is not None and self.space not in [
-            "feature",
-            "structure",
-            "auto",
-        ]:
-            raise ValueError("Only feature and structure space are supported.")
-
-        if self.space is None:
-            if X.shape[0] > X.shape[1]:
-                self.space = "feature"
-            else:
-                self.space = "structure"
-
-        if self.space == "feature":
-            return self._fit_feature_space(X, Yhat, W)
-        else:
-            return self._fit_structure_space(X, Yhat, W)
 
     def _compute_Yhat(self, X, Y, Yhat=None, W=None):
         """
