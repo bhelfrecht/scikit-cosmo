@@ -15,10 +15,9 @@ class PCovRTest(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         self.model = lambda mixing, **kwargs: PCovR(
-            mixing, full_eig=False, regularization=1e-8, **kwargs
+            mixing, regularization=1e-8, **kwargs
         )
-        error_tol = 1e-3
-        self.rounding = -int(round(np.log10(error_tol)))
+        self.error_tol = 1e-6
 
         self.X, self.Y = load_boston(return_X_y=True)
 
@@ -39,8 +38,8 @@ class PCovRTest(unittest.TestCase):
 
             with self.subTest(error=error):
                 self.assertFalse(np.isnan(error))
-            with self.subTest(error=error):
-                self.assertGreaterEqual(error, prev_error)
+            with self.subTest(error=error, alpha=mixing):
+                self.assertGreaterEqual(error, prev_error - self.error_tol)
 
             prev_error = error
 
@@ -57,8 +56,8 @@ class PCovRTest(unittest.TestCase):
 
             with self.subTest(error=error):
                 self.assertFalse(np.isnan(error))
-            with self.subTest(error=error):
-                self.assertGreaterEqual(error, prev_error)
+            with self.subTest(error=error, alpha=mixing):
+                self.assertGreaterEqual(error, prev_error - self.error_tol)
 
             prev_error = error
 
@@ -74,8 +73,8 @@ class PCovRTest(unittest.TestCase):
 
             with self.subTest(error=error):
                 self.assertFalse(np.isnan(error))
-            with self.subTest(error=error):
-                self.assertLessEqual(error, prev_error)
+            with self.subTest(error=error, alpha=mixing):
+                self.assertLessEqual(error, prev_error + self.error_tol)
 
             prev_error = error
 
@@ -102,7 +101,7 @@ class PCovRSpaceTest(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         self.model = lambda mixing, **kwargs: PCovR(
-            mixing, full_eig=False, regularization=1e-8, **kwargs
+            mixing, regularization=1e-8, **kwargs
         )
         error_tol = 1e-3
         self.rounding = -int(round(np.log10(error_tol)))

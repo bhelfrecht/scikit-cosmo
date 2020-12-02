@@ -1,12 +1,13 @@
 import numpy as np
+from functools import partial
 from sklearn.linear_model import RidgeCV as LR
 from sklearn.utils.validation import check_X_y, check_is_fitted
 from sklearn.utils import check_array
 from sklearn.decomposition._base import _BasePCA
 from sklearn.linear_model._base import LinearModel
-from scipy.sparse.linalg import eigs
 
 from .pcovr_distances import pcovr_covariance, pcovr_kernel_distance
+from skcosmo.utils import eig_solver
 
 
 class PCovR(_BasePCA, LinearModel):
@@ -27,8 +28,6 @@ class PCovR(_BasePCA, LinearModel):
     :param tol: tolerance below which to consider eigenvalues = 0
     :type tol: float, default 1E-12
 
-    :param full_eig: whether to compute the full eigendecomposition
-    :type full_eig: boolean, default False
 
     :param space: whether to compute the PCovR in `structure` or `feature` space
                   defaults to `structure` when :math:`{n_{samples} < n_{features}}` and
@@ -53,7 +52,6 @@ class PCovR(_BasePCA, LinearModel):
         n_components=None,
         regularization=1e-6,
         tol=1e-12,
-        full_eig=False,
         space=None,
         lr_args={"cv": 2, "fit_intercept": False},
     ):
@@ -63,9 +61,11 @@ class PCovR(_BasePCA, LinearModel):
         self.tol = tol
         self.space = space
         self.lr_args = lr_args
-        self.full_eig = full_eig
         self.n_components = n_components
         self.whiten = False
+        self._eig_solver = partial(
+            eig_solver, n_components=self.n_components, tol=self.tol, add_null=True
+        )
 
     def fit(self, X, Y, Yhat=None, W=None):
         """
@@ -103,10 +103,6 @@ class PCovR(_BasePCA, LinearModel):
         if self.n_components is None:
             self.n_components = min(X.shape)
 
-        # Sparse eigensolvers will not work when seeking N-1 eigenvalues
-        if min(X.shape) <= self.n_components:
-            self.full_eig = True
-
         if Yhat is None or W is None:
             Yhat, W = self._compute_Yhat(X, Y, Yhat=Yhat, W=W)
 
@@ -117,9 +113,9 @@ class PCovR(_BasePCA, LinearModel):
                 self.space = "structure"
 
         if self.space == "feature":
-            return self._fit_feature_space(X, Yhat, W)
+            self._fit_feature_space(X, Yhat, W)
         else:
-            return self._fit_structure_space(X, Yhat, W)
+            self._fit_structure_space(X, Yhat, W)
 
         self.mean_ = np.mean(X, axis=0)
         self.pxy_ = self.pxt_ @ self.pty_
@@ -261,34 +257,6 @@ class PCovR(_BasePCA, LinearModel):
         self.pxt_ = P @ T
         self.pty_ = T.T @ Yhat
         self.ptx_ = T.T @ X
-
-    def _eig_solver(self, matrix):
-
-        if not self.full_eig:
-            v, U = eigs(matrix, k=self.n_components, tol=self.tol)
-        else:
-            v, U = np.linalg.eig(matrix)
-
-        U = np.real(U[:, np.argsort(v)])
-        v = np.real(v[np.argsort(v)])
-
-        U = U[:, v > self.tol]
-        v = v[v > self.tol]
-
-        if len(v) == 1:
-            U = U.reshape(-1, 1)
-
-        if self.n_components > len(v):
-            print(
-                f"There are fewer than {self.n_components} "
-                f"significant eigenpair(s). Adding "
-                f"{self.n_components - len(v)} null eigenpair(s)."
-            )
-            for i in range(len(v), self.n_components):
-                v = np.array([*v, 0])
-                U = np.array([*U.T, np.zeros(U.shape[0])]).T
-
-        return v[: self.n_components], U[:, : self.n_components]
 
     def inverse_transform(self, T):
         """Transform data back to its original space.
