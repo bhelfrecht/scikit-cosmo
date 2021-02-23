@@ -15,7 +15,7 @@ from sklearn.utils._arpack import _init_arpack_v0
 from sklearn.linear_model._base import LinearModel
 from sklearn.metrics.pairwise import pairwise_kernels
 
-from skcosmo.pcovr import pcovr_kernel
+from skcosmo.utils import pcovr_kernel
 from skcosmo.preprocessing import KernelFlexibleCenterer
 
 
@@ -158,7 +158,7 @@ class KPCovR(_BasePCA, LinearModel):
     Examples
     --------
     >>> import numpy as np
-    >>> from skcosmo.pcovr import KPCovR
+    >>> from skcosmo.decomposition import KPCovR
     >>> from skcosmo.preprocessing import StandardFlexibleScaler as SFS
     >>>
     >>> X = np.array([[-1, 1, -3, 1], [1, -2, 1, 2], [-2, 0, -2, -2], [1, 0, 2, -1]])
